@@ -136,46 +136,71 @@ exports.checkStatus = async (req, res) => {
 
     // Send the HTTP request to check the payment status
     axios.request(options)
-        .then(async (response) => {
-            // Check if the payment was successful
-            if (response.data.success === true) {
-                // Check if the user ID is available
-                if (!userId) {
-                    return res.status(400).json({ success: false, message: "User ID not available" });
-                }
-
-                // Fetch the most recent order associated with the user within a certain timestamp range
-                const timestampThreshold = new Date(Date.now() - (24 * 60 * 60 * 1000)); // Example: Orders within the last 24 hours
-                const userOrders = await Order.find({ user: userId, createdAt: { $gt: timestampThreshold } })
-                    .sort({ createdAt: -1 })
-                    .limit(1);
-
-                // Check if any orders are found
-                if (!userOrders || userOrders.length === 0) {
-                    return res.status(404).json({ success: false, message: "No recent orders found for the user" });
-                }
-
-                // Create a new payment entry in the database
-                const newPayment = new Payment({
-                    user: userId,
-                    order: userOrders[0]._id, // Assuming you want to associate the payment with the most recent order
-                    tranxTionId: merchantTransactionId // Assign the merchantTransactionId to the transaction ID field
-                });
-
-                // Save the new payment entry to the database
-                await newPayment.save();
-
-                // Redirect the user to the success page
-                const successRedirectUrl = `${process.env.FRONTEND_URL}/order-confirmed`;
-                return res.redirect(successRedirectUrl);
-            } else {
-                // Redirect the user to the failed payment page
-                const failedRedirectUrl = `${process.env.FRONTEND_URL}/paymentsuccess/Failed`;
-                return res.redirect(failedRedirectUrl);
+    .then(async (response) => {
+        // Check if the payment was successful
+        if (response.data.success === true) {
+            // Check if the user ID is available
+            if (!userId) {
+                return res.status(400).json({ success: false, message: "User ID not available" });
             }
-        })
-        .catch((error) => {
-            console.error(error);
-            return res.status(500).json({ success: false, message: "Internal server error" });
-        });
+
+            // Fetch the most recent order associated with the user within a certain timestamp range
+            const timestampThreshold = new Date(Date.now() - (24 * 60 * 60 * 1000)); // Example: Orders within the last 24 hours
+            const userOrders = await Order.find({ user: userId, createdAt: { $gt: timestampThreshold } })
+                .sort({ createdAt: -1 })
+                .limit(1);
+
+            // Check if any orders are found
+            if (!userOrders || userOrders.length === 0) {
+                return res.status(404).json({ success: false, message: "No recent orders found for the user" });
+            }
+
+            // Update the order status to "Confirmed"
+            const orderId = userOrders[0]._id;
+            await Order.findByIdAndUpdate(orderId, { orderStatus: "Confirmed" });
+
+            // Create a new payment entry in the database
+            const newPayment = new Payment({
+                user: userId,
+                order: orderId, // Using the retrieved order ID
+                tranxTionId: merchantTransactionId // Assign the merchantTransactionId to the transaction ID field
+            });
+
+            // Save the new payment entry to the database
+            await newPayment.save();
+
+            // Redirect the user to the success page
+            const successRedirectUrl = `${process.env.FRONTEND_URL}/order-confirmed`;
+            return res.redirect(successRedirectUrl);
+        } else {
+            // Check if the user ID is available
+            if (!userId) {
+                return res.status(400).json({ success: false, message: "User ID not available" });
+            }
+
+            // Fetch the most recent order associated with the user within a certain timestamp range
+            const timestampThreshold = new Date(Date.now() - (24 * 60 * 60 * 1000)); // Example: Orders within the last 24 hours
+            const userOrders = await Order.find({ user: userId, createdAt: { $gt: timestampThreshold } })
+                .sort({ createdAt: -1 })
+                .limit(1);
+
+            // Check if any orders are found
+            if (!userOrders || userOrders.length === 0) {
+                return res.status(404).json({ success: false, message: "No recent orders found for the user" });
+            }
+
+            // Update the order status to "Failed"
+            const orderId = userOrders[0]._id;
+            await Order.findByIdAndUpdate(orderId, { orderStatus: "Failed" });
+
+            // Redirect the user to the failed payment page
+            const failedRedirectUrl = `${process.env.FRONTEND_URL}/paymentsuccess/Failed`;
+            return res.redirect(failedRedirectUrl);
+        }
+    })
+    .catch((error) => {
+        console.error(error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    });
+
 };
