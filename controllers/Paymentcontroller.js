@@ -166,7 +166,7 @@ exports.checkStatus = async (req, res) => {
                 await newPayment.save();
 
                 // Redirect the user to the success page
-                const successRedirectUrl = `www.camro.digiindiasolutions.com/order-confirmed`;
+                const successRedirectUrl = `${process.env.FRONTEND_URL}/order-confirmed`;
                 return res.redirect(successRedirectUrl);
             } else {
                 // Redirect the user to the failed payment page
