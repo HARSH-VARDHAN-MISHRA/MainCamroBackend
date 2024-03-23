@@ -15,10 +15,7 @@ const cookiesParser = require('cookie-parser');
 ConnectDB();
 
 // Middlewareapp.use(helmet()); // Use helmet for security headers
-app.use(cors({
-
-  credentials: true
-}));
+app.use(cors());
 app.use(cookiesParser())
 app.use(express.json());
 
