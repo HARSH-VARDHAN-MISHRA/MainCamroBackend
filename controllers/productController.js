@@ -1,12 +1,20 @@
 const Product = require("../models/product.model");
 const Image = require('../models/AllImages')
-
+const Category = require('../models/Categorey.model')
+const cloudinary = require("cloudinary").v2;
+const fs = require('fs').promises;
+const path = require('path');
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_API_NAME,
+  api_key: process.env.CLOUDINARY_API,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 exports.createProduct = async (req, res) => {
+  const files = req.files;
   try {
     // Destructure all fields from req.body as per the schema
     const {
       productName,
-      images,
       property,
       sizes,
       originalPrice,
@@ -20,12 +28,49 @@ exports.createProduct = async (req, res) => {
       addInfo
     } = req.body;
 
+    console.log('Received sizes:', sizes);
+
+    let parsedSizes;
+    try {
+      // Directly parse the sizes JSON string
+      parsedSizes = JSON.parse(sizes);
+    } catch (parseError) {
+      console.error('Error parsing sizes JSON:', parseError);
+      return res.status(400).json({ error: 'Invalid sizes format' });
+    }
+
+    const uploadedImages = [];
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      const tempFilePath = path.join(__dirname, `temp_${file.originalname}`);
+
+      // Write the buffer data to the temporary file
+      await fs.writeFile(tempFilePath, file.buffer);
+
+      // Upload the temporary file to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
+        folder: 'camro-cookers',
+        public_id: file.originalname
+      });
+
+      // Push the secure URL of the uploaded image to the array
+      uploadedImages.push(uploadResult.secure_url);
+
+      // Remove the temporary file after uploading
+      await fs.unlink(tempFilePath);
+    }
+
+    console.log('Uploaded images:', uploadedImages);
+
     // Create a new product instance
     const newProduct = new Product({
       productName,
-      images, // Assuming images already contain the correct structure { img: "url" }
       property,
-      sizes, // Included sizes in the product creation
+      img: uploadedImages[0],
+      secondImg: uploadedImages[1] || uploadedImages[0],
+      thirdImage: uploadedImages[2] || uploadedImages[0],
+      fourthImage: uploadedImages[3] || uploadedImages[0],// Ensure images is an array of strings
+      sizes: parsedSizes, // Included sizes in the product creation
       originalPrice,
       discoPrice,
       vendor,
@@ -45,67 +90,6 @@ exports.createProduct = async (req, res) => {
   } catch (error) {
     console.error('Error creating product:', error);
     res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
-const cloudinary = require("cloudinary").v2;
-const fs = require("fs");
-const multer = require("multer");
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = "./temp";
-    // Check if the directory exists, if not create it
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage });
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_API_NAME,
-  api_key: process.env.CLOUDINARY_API,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-exports.ImageUpload = async (req, res) => {
-  try {
-    // Check if files were uploaded
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: "No files uploaded" });
-    }
-
-    const imageUrls = [];
-
-    // Upload each file to Cloudinary
-    for (const file of req.files) {
-      const result = await uploadOnCloudinary(file.path);
-      if (result && result.url) {
-        imageUrls.push(result.url); // Store the URL of the uploaded image
-      }
-      // Delete the temporary file after upload
-      fs.unlinkSync(file.path);
-    }
-
-    res.status(201).json({ message: "Images uploaded successfully", imageUrls });
-  } catch (error) {
-    console.error('Error uploading images:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-exports.getAllImages = async (req, res) => {
-  try {
-    const allImages = await Image.find(); // Correctly await the promise returned by find()
-    res.status(200).json(allImages); // Send the found images as a response
-  } catch (error) {
-    console.error(error); // It's good practice to use console.error for errors
-    res.status(500).json({ error: 'Internal Server Error' }); // Provide a response on error
   }
 };
 // Update product
@@ -294,32 +278,16 @@ exports.getProductsByProductNameOrCategory = async (req, res) => {
 
 
 
-
 exports.getAllCategoryWithImagesAndNumberOfProducts = async (req, res) => {
   try {
-    const categoriesWithInfo = await Product.aggregate([
-      // Group products by category
-      {
-        $group: {
-          _id: "$Category",
-          numberOfProducts: { $sum: 1 }, // Count the number of products in each category
-          firstImage: { $first: "$images.img" } // Get the first image URL of each category
-        }
-      },
-      // Project to reshape the output
-      {
-        $project: {
-          _id: 0,
-          category: "$_id",
-          image: { $arrayElemAt: ["$firstImage", 0] },
-          numberOfProducts: 1
-        }
-      }
-    ]);
-
-    res.status(200).json(categoriesWithInfo);
+    const getAllCategories = await Category.find()
+    console.log(getAllCategories)
+    res.status(200).json({
+      success: true,
+      data: getAllCategories
+    });
   } catch (error) {
     console.error('Error fetching categories with images and number of products:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};

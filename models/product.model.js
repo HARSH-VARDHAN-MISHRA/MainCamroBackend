@@ -3,9 +3,20 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
 
     productName: String,
-    images: [{
-        img: String,
-    }],
+    img: {
+        type: String    },
+    secondImg: {
+        type: String
+       
+    },
+    thirdImage: {
+        type: String
+       
+    },
+    fourthImage: {
+        type: String
+       
+    },
     property: String,
     sizes: [{
         id: Number,

@@ -1,51 +1,49 @@
 const Banner = require('../models/Banners.model');
 const Category = require('../models/Categorey.model');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
 const Tags = require('../models/Tags.model');
 const Vouchers = require('../models/Vouchers.model');
 const storage = multer.diskStorage({});
-// Configure Cloudinary
+const cloudinary = require("cloudinary").v2;
+const fs = require('fs').promises;
+const path = require('path');
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_API_NAME,
   api_key: process.env.CLOUDINARY_API,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 1024 * 1024 * 5 }, // Limiting file size to 5MB, adjust as needed
-  fileFilter: (req, file, cb) => {
-    // Check file type, you can customize this according to your requirements
-    if (file.mimetype.startsWith('image')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed!'));
-    }
-  },
-}).single('images'); // Ensure that the field name here matches the one from the frontend
+  api_secret: process.env.CLOUDINARY_API_SECRET
+}); // Ensure that the field name here matches the one from the frontend
 
 exports.createBanner = async (req, res) => {
   try {
-    console.log(req.body);
-    const { title, active, image } = req.body;
+    console.log("i am hit", req.file);
+    const { title, active} = req.body;
     
     // Initialize an array to hold names of missing fields
     let missingFields = [];
 
     // Check for required fields and add the field name to the array if missing
     if (!title) missingFields.push('title');
-    if (!image) missingFields.push('image');
 
     // If there are any missing fields, return a 400 response with details
     if (missingFields.length > 0) {
       return res.status(400).json({ msg: `Please fill out all fields: ${missingFields.join(', ')}` });
     }
+    let uploadedImages = [];
+    const file = req.file; // accessing the file through req.file
+    const tempFilePath = path.join(__dirname, `temp_${file.originalname}`);
+    await fs.writeFile(tempFilePath, file.buffer);
 
+    // Upload the temporary file to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
+      folder: 'camro-banner',
+      public_id: file.originalname
+    });
+    uploadedImages.push(uploadResult.secure_url);
+    await fs.unlink(tempFilePath);
     // Create new banner with provided data
     const newBanner = new Banner({
       title,
-      image,
+      image: uploadedImages[0], // use the uploadedImages array
       active: active ? true : false,
     });
 
@@ -63,8 +61,6 @@ exports.createBanner = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
-
 
 exports.getllbanner = async (req, res) => {
   try {
@@ -207,17 +203,30 @@ exports.markInactiveBanner = async (req, res) => {
 
 exports.makeCategories = async (req, res) => {
   try {
-    const { title, CatImg } = req.body;
+    
+    console.log(req.file)
+    const { title } = req.body;
 
     // Check if required fields are present
     if (!title) {
       return res.status(400).json({ msg: 'Title is required for creating a category' });
     }
+    let uploadedImages = [];
+    const file = req.file; // accessing the file through req.file
+    const tempFilePath = path.join(__dirname, `temp_${file.originalname}`);
+    await fs.writeFile(tempFilePath, file.buffer);
 
+    // Upload the temporary file to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
+      folder: 'camro-category',
+      public_id: file.originalname
+    });
+    uploadedImages.push(uploadResult.secure_url);
+    await fs.unlink(tempFilePath);
     // Create new category
     const newCategory = new Category({
       title,
-      CatImg,
+      CatImg:uploadedImages[0],
     });
 
     // Save the new category to the database
