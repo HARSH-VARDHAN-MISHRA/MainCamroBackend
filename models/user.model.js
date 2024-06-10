@@ -28,34 +28,37 @@ const UserSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
- 
+
     Role: {
       type: String,
       enum: ["User", "Admin"],
       default: "User",
     },
-    ForgetPasswordOtp:{
-      type:String
+    OtpForVerification :{
+      type: Number
+    },
+    ForgetPasswordOtp: {
+      type: String
     },
     OtpGeneratedAt: {
       type: Date,
     }
   },
- 
+
   { timestamps: true }
 );
 
 // Password Hashing
 
 UserSchema.pre("save", async function (next) {
-// Instilize user with this
+  // Instilize user with this
   const user = this;
 
-// check user Password
+  // check user Password
   if (!user.isModified("Password")) {
     return next();
   }
-//Hash The password using bcrypt 
+  //Hash The password using bcrypt 
   try {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(user.Password, salt);

@@ -131,11 +131,11 @@ exports.getAllUser = async (req, res) => {
 // Register
 exports.RegisterUser = async (req, res) => {
   try {
-    console.log(req.body)
+    // console.log(req.body)
     const { Name, Email, Password, ContactNumber, Role } = req.body;
 
     // Validate if no any empty field
-
+    const otp = generateOtp();
     const emptyFields = [];
 
     if (!Name) {
@@ -186,13 +186,102 @@ exports.RegisterUser = async (req, res) => {
       Password,
       ContactNumber,
       Role,
+      OtpForVerification: otp
     });
 
     const emailOptions = {
       email: Email,
-      subject: 'Welcome To Ecommerce Project',
-      message: `Congratulations Buddy ${Name}`,
+      subject: 'Welcome To Camro Company - Verification Code Inside',
+      message: `
+        <html>
+          <head>
+            <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f6f6;
+          }
+          .container {
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 600px;
+          }
+          .header {
+            background-color: #0044cc;
+            padding: 10px;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+            color: #ffffff;
+          }
+          .content {
+            padding: 20px;
+            text-align: center;
+          }
+          .content h1 {
+            color: #333333;
+          }
+          .content p {
+            font-size: 16px;
+            color: #666666;
+          }
+          .verification-code {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            font-size: 24px;
+            color: #ffffff;
+            background-color: #0044cc;
+            border-radius: 5px;
+          }
+          .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #999999;
+          }.example {
+    display: -ms-grid;
+    display: grid;
+    -webkit-transition: all .5s;
+    -o-transition: all .5s;
+    transition: all .5s;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+    background: -webkit-gradient(linear, left top, left bottom, from(white), to(black));
+    background: -o-linear-gradient(top, white, black);
+    background: linear-gradient(to bottom, white, black);
+}
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h2>Welcome to Camro </h2>
+              </div>
+              <div class="content">
+                <h1>Congratulations, ${Name}!</h1>
+                <p>We are excited to have you on board. To get started, please verify your email address using the verification code below:</p>
+                <div class="verification-code">${otp}</div>
+                <p>Thank you for joining us at Camro Company. If you have any questions, feel free to contact our support team.</p>
+              </div>
+              <div class="footer">
+                &copy; ${new Date().getFullYear()} Camro Company. All rights reserved.
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
     };
+
+    // Note: Ensure `verificationCode` variable is defined and contains the actual verification code.
+
 
 
 
@@ -214,6 +303,128 @@ exports.RegisterUser = async (req, res) => {
   }
 };
 
+
+exports.verifyOtpForSignIn = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please fill all required fields',
+      });
+    }
+
+    const existingUserByMail = await User.findOne({ Email: email });
+    if (!existingUserByMail) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not registered',
+      });
+    }
+
+    if (existingUserByMail.OtpForVerification === otp) {
+      existingUserByMail.isActive = true;
+      await existingUserByMail.save();
+
+      const emailOptions = {
+        email: email,
+        subject: 'Welcome to Camro Company - Verification Successful',
+        message: `
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 0;
+                  padding: 0;
+                  background-color: #f6f6f6;
+                }
+                .container {
+                  width: 100%;
+                  padding: 20px;
+                  background-color: #ffffff;
+                  border-radius: 10px;
+                  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                  margin: 20px auto;
+                  max-width: 600px;
+                }
+                .header {
+                  background-color: #0044cc;
+                  padding: 10px;
+                  border-radius: 10px 10px 0 0;
+                  text-align: center;
+                  color: #ffffff;
+                }
+                .content {
+                  padding: 20px;
+                  text-align: center;
+                }
+                .content h1 {
+                  color: #333333;
+                }
+                .content p {
+                  font-size: 16px;
+                  color: #666666;
+                }
+                .button {
+                  display: inline-block;
+                  margin: 20px 0;
+                  padding: 10px 20px;
+                  font-size: 16px;
+                  color: #ffffff;
+                  background-color: #0044cc;
+                  border-radius: 5px;
+                  text-decoration: none;
+                }
+                .footer {
+                  text-align: center;
+                  padding: 20px;
+                  font-size: 12px;
+                  color: #999999;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Welcome to Camro Company</h2>
+                </div>
+                <div class="content">
+                  <h1>Congratulations, ${existingUserByMail.Name}!</h1>
+                  <p>Your email has been successfully verified. We are excited to have you on board.</p>
+                  <a target="_blank" href="https://camrosteel.com/" class="button">Visit Our Website</a>
+                  <p>Thank you for joining us at Camro Company. If you have any questions, feel free to contact our support team.</p>
+                </div>
+                <div class="footer">
+                  &copy; ${new Date().getFullYear()} Camro Company. All rights reserved.
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+      };
+
+      await sendEmail(emailOptions);
+
+      return res.status(200).json({
+        success: true,
+        message: 'User verified successfully',
+      });
+    } else {
+      // Optional: Implement account deletion or another action after a delay
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid OTP',
+      });
+    }
+  } catch (error) {
+    console.error('Error during user verification:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+    });
+  }
+};
 
 //Login 
 exports.LogginUser = async (req, res) => {
@@ -403,7 +614,7 @@ exports.ResendOtp = async (req, res) => {
 exports.VerifyOtp = async (req, res) => {
   try {
     const { otp } = req.body; // Ensure newPassword is retrieved from req.body
-    const { email,newPassword } = req.params; // email is retrieved from req.params
+    const { email, newPassword } = req.params; // email is retrieved from req.params
 
     if (!email || !otp || !newPassword) {
       return res.status(403).json({
@@ -427,7 +638,7 @@ exports.VerifyOtp = async (req, res) => {
       });
     }
 
-    
+
     user.Password = newPassword
     user.ForgetPasswordOtp = null;
     user.OtpGeneratedAt = null;
