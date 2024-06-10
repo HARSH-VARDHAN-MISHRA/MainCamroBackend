@@ -379,7 +379,7 @@ exports.ResendOtp = async (req, res) => {
     await user.save();
 
     const options = {
-      to: email,
+      email: email,
       subject: "Password Reset Request - Resend OTP",
       message: `Your new OTP for password reset is: ${otp}`
     };
