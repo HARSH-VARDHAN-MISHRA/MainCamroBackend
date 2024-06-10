@@ -34,7 +34,14 @@ const UserSchema = mongoose.Schema(
       enum: ["User", "Admin"],
       default: "User",
     },
+    ForgetPasswordOtp:{
+      type:String
+    },
+    OtpGeneratedAt: {
+      type: Date,
+    }
   },
+ 
   { timestamps: true }
 );
 

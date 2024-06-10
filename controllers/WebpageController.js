@@ -16,8 +16,8 @@ cloudinary.config({
 exports.createBanner = async (req, res) => {
   try {
     console.log("i am hit", req.file);
-    const { title, active} = req.body;
-    
+    const { title, active } = req.body;
+
     // Initialize an array to hold names of missing fields
     let missingFields = [];
 
@@ -170,7 +170,7 @@ exports.markInactiveBanner = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
- exports.toggleBannerActiveStatus = async (req, res) => {
+exports.toggleBannerActiveStatus = async (req, res) => {
   try {
     const bannerId = req.params.id;
     // Check if bannerId is provided
@@ -203,7 +203,7 @@ exports.markInactiveBanner = async (req, res) => {
 
 exports.makeCategories = async (req, res) => {
   try {
-    
+
     console.log(req.file)
     const { title } = req.body;
 
@@ -226,7 +226,7 @@ exports.makeCategories = async (req, res) => {
     // Create new category
     const newCategory = new Category({
       title,
-      CatImg:uploadedImages[0],
+      CatImg: uploadedImages[0],
     });
 
     // Save the new category to the database
@@ -244,22 +244,68 @@ exports.makeCategories = async (req, res) => {
   }
 };
 
-// Function to get all categories
-  exports.getAllCategories = async (req, res) => {
-    try {
-      // Fetch all categories from the database
-      const categories = await Category.find();
+exports.updateCategories = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title } = req.body;
 
-      // Return the categories as a response
-      res.status(200).json({
-        success: true,
-        data: categories,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    // Check if the category exists
+    let category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ msg: 'Category not found' });
     }
-  };
+
+    let uploadedImage = category.CatImg; // Keep existing image URL by default
+
+    // If a new image file is uploaded, process the upload
+    if (req.file) {
+      const file = req.file;
+      const tempFilePath = path.join(__dirname, `temp_${file.originalname}`);
+      await fs.writeFile(tempFilePath, file.buffer);
+
+      // Upload the temporary file to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
+        folder: 'camro-category',
+        public_id: file.originalname
+      });
+      uploadedImage = uploadResult.secure_url;
+      await fs.unlink(tempFilePath);
+    }
+
+    // Update category fields
+    category.title = title || category.title;
+    category.CatImg = uploadedImage;
+
+    // Save the updated category to the database
+    await category.save();
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      data: category,
+      msg: 'Category updated successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+// Function to get all categories
+exports.getAllCategories = async (req, res) => {
+  try {
+    // Fetch all categories from the database
+    const categories = await Category.find();
+
+    // Return the categories as a response
+    res.status(200).json({
+      success: true,
+      data: categories,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
 // Function to delete a category by ID
 exports.deleteCategoryById = async (req, res) => {
@@ -387,7 +433,7 @@ exports.createVouchers = async (req, res) => {
     const { title, OffPercentage, howMuchTimeApply } = req.body;
 
     // Check if required fields are present
-    if (!title || !OffPercentage ) {
+    if (!title || !OffPercentage) {
       return res.status(400).json({ msg: 'Title, Off Percentage, and How Much Time Apply are required for creating a voucher' });
     }
 

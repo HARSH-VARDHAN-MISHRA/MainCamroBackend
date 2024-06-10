@@ -97,10 +97,17 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedFields = req.body;
+    const files = req.files;
+    console.log(files);
 
-    // Fetch the existing product data
+    let parsedSizes;
+    try {
+      parsedSizes = JSON.parse(updatedFields.sizes);
+    } catch (parseError) {
+      console.error('Error parsing sizes JSON:', parseError);
+      return res.status(400).json({ error: 'Invalid sizes format' });
+    }
     const existingProduct = await Product.findById(id);
-
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
@@ -108,10 +115,32 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    // Merge the existing data with the updated fields
-    const mergedFields = { ...existingProduct.toObject(), ...updatedFields };
+    const uploadedImages = [];
+    if (files && files.length > 0) {
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        const tempFilePath = path.join(__dirname, `temp_${file.originalname}`);
 
-    // Update the product with the merged fields
+        await fs.writeFile(tempFilePath, file.buffer);
+
+        const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
+          folder: 'camro-cookers',
+          public_id: file.originalname
+        });
+
+        uploadedImages.push(uploadResult.secure_url);
+        await fs.unlink(tempFilePath);
+      }
+    }
+
+    const mergedFields = { ...existingProduct.toObject(), ...updatedFields, sizes: parsedSizes };
+    if (uploadedImages.length > 0) {
+      if (uploadedImages[0]) mergedFields.img = uploadedImages[0];
+      if (uploadedImages[1]) mergedFields.secondImg = uploadedImages[1];
+      if (uploadedImages[2]) mergedFields.thirdImage = uploadedImages[2];
+      if (uploadedImages[3]) mergedFields.fourthImage = uploadedImages[3];
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $set: mergedFields },
@@ -124,10 +153,10 @@ exports.updateProduct = async (req, res) => {
       message: "Product updated successfully",
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error updating product:', error);
     return res.status(500).json({
       success: false,
-      message: "Internal Error",
+      message: "Internal Server Error",
     });
   }
 };
