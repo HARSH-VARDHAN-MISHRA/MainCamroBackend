@@ -425,7 +425,114 @@ exports.verifyOtpForSignIn = async (req, res) => {
     });
   }
 };
+exports.ResendSignOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(403).json({
+        success: false,
+        msg: "Please provide an email"
+      });
+    }
 
+    const user = await User.findOne({ Email: email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        msg: "User Not Available With this Email"
+      });
+    }
+
+    const otp = generateOtp();
+    user.OtpForVerification = otp;
+ 
+
+    await user.save();
+
+    const options = {
+      email: email,
+      subject: "Sign In OTP Request - Resend OTP",
+      message: `
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f6f6f6;
+              }
+              .container {
+                width: 100%;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 20px auto;
+                max-width: 600px;
+              }
+              .header {
+                background-color: #0044cc;
+                padding: 10px;
+                border-radius: 10px 10px 0 0;
+                text-align: center;
+                color: #ffffff;
+              }
+              .content {
+                padding: 20px;
+                text-align: center;
+              }
+              .content h1 {
+                color: #333333;
+              }
+              .content p {
+                font-size: 16px;
+                color: #ffffff;
+                background-color: #ff0000;
+                padding: 10px;
+                border-radius: 5px;
+              }
+              .footer {
+                text-align: center;
+                padding: 20px;
+                font-size: 12px;
+                color: #999999;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h2>Sign In OTP Request - Resend OTP</h2>
+              </div>
+              <div class="content">
+                <p>Your new OTP for Sign-In : <strong>${otp}</strong></p>
+                <p>Please use this OTP to sign in to your account.</p>
+                <p>If you didn't request this OTP, please ignore this email.</p>
+              </div>
+              <div class="footer">
+                &copy; ${new Date().getFullYear()} Camro Company. All rights reserved.
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+    };
+    
+    await sendEmail(options);
+
+    return res.status(200).json({
+      success: true,
+      msg: "OTP resent to your email"
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(501).json({
+      success: false,
+      msg: "Internal Server Error"
+    });
+  }
+};
 //Login 
 exports.LogginUser = async (req, res) => {
   try {
