@@ -1,6 +1,6 @@
 const express = require('express')
 const Image = require('../models/AllImages')
-const { RegisterUser, LogginUser, LogoutUser, getUserIdbyUser, createContact, getContacts, getAllUser, changePassword, PasswordChangeRequest, ResendOtp, VerifyOtp } = require('../controllers/usercontroller')
+const { RegisterUser, LogginUser, LogoutUser, getUserIdbyUser, createContact, getContacts, getAllUser, changePassword, PasswordChangeRequest, ResendOtp, VerifyOtp, verifyOtpForSignIn } = require('../controllers/usercontroller')
 const { createProduct, getAllProducts, getOneProduct, updateProduct, deleteProduct, getProductByKeywords, getAllCategoryWithImagesAndNumberOfProducts, getProductsByProductNameOrCategory, ImageUpload, getAllImages } = require('../controllers/productController')
 const { protect } = require('../middleware/authmiddlleware')
 const { CreateOrder, orderForMe, orderForAdmin, UpdateOrderStatus, getTransactionID, getSingleOrderById } = require('../controllers/orderController')
@@ -16,6 +16,8 @@ const SingleUpload = multer({ storage }).single('image')
 router.post('/Register', RegisterUser)
 router.post('/Password-change-request', PasswordChangeRequest)
 router.post('/Resend-Otp', ResendOtp)
+router.post('/Verify-sign-Otp', verifyOtpForSignIn)
+
 router.post('/Verify-Otp/:email/:newPassword', VerifyOtp)
 
 router.post('/changePassword', protect, changePassword)
