@@ -307,13 +307,23 @@ exports.RegisterUser = async (req, res) => {
 exports.verifyOtpForSignIn = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
+
+    // Validate email format
+    if (!email || !isValidEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please fill all required fields',
+        message: 'Please provide a valid email address',
       });
     }
-    console.log(otp)
+
+    // Validate OTP format (numeric string of length 6)
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid OTP',
+      });
+    }
+
     const existingUserByMail = await User.findOne({ Email: email });
     if (!existingUserByMail) {
       return res.status(404).json({
@@ -322,7 +332,17 @@ exports.verifyOtpForSignIn = async (req, res) => {
       });
     }
 
-    if (existingUserByMail.OtpForVerification = otp) {
+    // Check if user is already verified
+    if (existingUserByMail.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already verified',
+      });
+    }
+
+    // Check if OTP matches and is within the expiration time
+    if (existingUserByMail.OtpForVerification === otp && existingUserByMail.isActive === false) {
+      // Verify user
       existingUserByMail.isActive = true;
       await existingUserByMail.save();
 
@@ -403,15 +423,22 @@ exports.verifyOtpForSignIn = async (req, res) => {
           </html>
         `,
       };
-
-      await sendEmail(emailOptions);
+      try {
+        await sendEmail(emailOptions);
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Error sending verification email',
+        });
+      }
 
       return res.status(200).json({
         success: true,
         message: 'User verified successfully',
       });
     } else {
-      // Optional: Implement account deletion or another action after a delay
+      // Optional: Implement account deletion or another action after a certain number of failed attempts
       return res.status(401).json({
         success: false,
         message: 'Invalid OTP',
