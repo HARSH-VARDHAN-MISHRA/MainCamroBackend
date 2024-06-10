@@ -313,7 +313,7 @@ exports.verifyOtpForSignIn = async (req, res) => {
         message: 'Please fill all required fields',
       });
     }
-
+    console.log(otp)
     const existingUserByMail = await User.findOne({ Email: email });
     if (!existingUserByMail) {
       return res.status(404).json({
@@ -322,7 +322,7 @@ exports.verifyOtpForSignIn = async (req, res) => {
       });
     }
 
-    if (existingUserByMail.OtpForVerification === otp) {
+    if (existingUserByMail.OtpForVerification = otp) {
       existingUserByMail.isActive = true;
       await existingUserByMail.save();
 
