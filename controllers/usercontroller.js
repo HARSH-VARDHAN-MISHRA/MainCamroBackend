@@ -445,7 +445,7 @@ exports.ResendSignOtp = async (req, res) => {
 
     const otp = generateOtp();
     user.OtpForVerification = otp;
- 
+
 
     await user.save();
 
@@ -518,7 +518,7 @@ exports.ResendSignOtp = async (req, res) => {
         </html>
       `
     };
-    
+
     await sendEmail(options);
 
     return res.status(200).json({
@@ -557,7 +557,7 @@ exports.LogginUser = async (req, res) => {
     const PasswordMatch = await checkUser.comparePassword(Password)
     if (!PasswordMatch) {
       return res.status(401).json({
-        succes: false,
+        success: false,
         message: "Invalid Password"
       })
     }
@@ -653,8 +653,70 @@ exports.PasswordChangeRequest = async (req, res) => {
     const options = {
       email: email,
       subject: "Password Reset Request",
-      message: `Your OTP for password reset is: ${otp}`
+      message: `
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f6f6f6;
+              }
+              .container {
+                width: 100%;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 20px auto;
+                max-width: 600px;
+              }
+              .header {
+                background-color: #0044cc;
+                padding: 10px;
+                border-radius: 10px 10px 0 0;
+                text-align: center;
+                color: #ffffff;
+              }
+              .content {
+                padding: 20px;
+                text-align: center;
+              }
+              .content p {
+                font-size: 16px;
+                color: #ffffff;
+                background-color: #ff0000;
+                padding: 10px;
+                border-radius: 5px;
+              }
+              .footer {
+                text-align: center;
+                padding: 20px;
+                font-size: 12px;
+                color: #999999;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h2>Password Reset Request</h2>
+              </div>
+              <div class="content">
+                <p>Your OTP for password reset is: <strong>${otp}</strong></p>
+                <p>Please use this OTP to reset your password.</p>
+                <p>If you didn't request this password reset, please ignore this email.</p>
+              </div>
+              <div class="footer">
+                &copy; ${new Date().getFullYear()} Camro Company. All rights reserved.
+              </div>
+            </div>
+          </body>
+        </html>
+      `
     };
+
 
     await sendEmail(options);
 
@@ -699,8 +761,67 @@ exports.ResendOtp = async (req, res) => {
     const options = {
       email: email,
       subject: "Password Reset Request - Resend OTP",
-      message: `Your new OTP for password reset is: ${otp}`
+      message: `
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f6f6f6;
+              }
+              .container {
+                width: 100%;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                margin: 20px auto;
+                max-width: 600px;
+              }
+              .header {
+                background-color: #ff0000; /* Red background */
+                padding: 10px;
+                border-radius: 10px 10px 0 0;
+                text-align: center;
+                color: #ffffff; /* White text */
+              }
+              .content {
+                padding: 20px;
+                text-align: center;
+              }
+              .content p {
+                font-size: 16px;
+                color: #ff0000; /* Red text */
+              }
+              .footer {
+                text-align: center;
+                padding: 20px;
+                font-size: 12px;
+                color: #999999;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h2>Password Reset Request - Resend OTP</h2>
+              </div>
+              <div class="content">
+                <p>Your new OTP for password reset is: <strong style="color: #ffffff;">${otp}</strong></p>
+                <p>Please use this OTP to reset your password.</p>
+                <p>If you didn't request this password reset, please ignore this email.</p>
+              </div>
+              <div class="footer">
+                &copy; ${new Date().getFullYear()} Camro Company. All rights reserved.
+              </div>
+            </div>
+          </body>
+        </html>
+      `
     };
+
 
     await sendEmail(options);
 
