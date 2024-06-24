@@ -60,7 +60,7 @@ exports.createProduct = async (req, res) => {
       await fs.unlink(tempFilePath);
     }
 
-    console.log('Uploaded images:', uploadedImages);
+    // console.log('Uploaded images:', uploadedImages);
 
     // Create a new product instance
     const newProduct = new Product({
@@ -84,7 +84,6 @@ exports.createProduct = async (req, res) => {
 
     // Save the new product to the database
     await newProduct.save();
-
     // Respond with the created product
     res.status(201).json({ message: 'Product created successfully', product: newProduct });
   } catch (error) {
@@ -98,7 +97,7 @@ exports.updateProduct = async (req, res) => {
     const { id } = req.params;
     const updatedFields = req.body;
     const files = req.files;
-    console.log(files);
+    console.log("I Am Hit With This Data",req.body)
 
     let parsedSizes;
     try {
@@ -146,6 +145,7 @@ exports.updateProduct = async (req, res) => {
       { $set: mergedFields },
       { new: true }
     );
+    console.log("After Updates",updatedProduct)
 
     return res.status(200).json({
       success: true,
