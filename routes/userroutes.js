@@ -7,6 +7,11 @@ const { CreateOrder, orderForMe, orderForAdmin, UpdateOrderStatus, getTransactio
 const { createBanner, getllbanner, deleteBanner, markInactiveBanner, getAllActiveBanners, toggleBannerActiveStatus, makeCategories, getAllCategories, deleteCategoryById, makeTags, getTags, deleteTags, createVouchers, editVoucher, deleteVoucher, getVouchers, updateCategories } = require('../controllers/WebpageController')
 const router = express.Router()
 const multer = require('multer');
+const {   CreateMainCategorey,
+    UpdateMainCategorey,
+    GetAllMainCategorey,
+    GetSubCategreyByMainCategorey,
+    deleteMainCategorey } = require('../controllers/MainCategory')
 const cloudinary = require('cloudinary').v2;
 // const fs = require('fs');
 // const path = require('path');
@@ -77,7 +82,12 @@ router.post('/edit-vouchers', editVoucher)
 
 router.post('/delete-tags/:id', deleteVoucher)
 
+// Main Category
 
-
+router.post('/Create-Main-Category', CreateMainCategorey);
+router.put('/Update-Main-Category/:id', UpdateMainCategorey);
+router.get('/Get-All-Main-Categories', GetAllMainCategorey);
+router.get('/Get-Sub-Categories-By-Main-Category/:id', GetSubCategreyByMainCategorey);
+router.delete('/Delete-Main-Category/:id', deleteMainCategorey);
 
 module.exports = router 
